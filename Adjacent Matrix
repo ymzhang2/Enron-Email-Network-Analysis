@@ -1,0 +1,103 @@
+name <- read.table("C:/Users/Yaku Wang/Documents/3 semester/big data/project 1/project 1 update/netList.csv")
+head(name)
+dim(name)
+##find some emails are not @enron.com
+library(gsubfn)
+library(proto)
+gsub(".*@","",name[,1])
+##extract all @enron,com email
+library(sqldf)
+name1 <- sqldf("select * from name where v1 Like '%@enron.com'")
+gsub(".*@","",name1[,1])
+head(name1)
+##remove front space from the name
+name2 <- gsub(" ","",name1[,1])
+head(name2)
+##extract fromname and toname
+newname <- unlist(strsplit(as.character(name2), ","))
+head(newname)
+length(newname)
+name.matrix <- matrix(newname,nrow=12910,ncol=2,byrow=T)
+head(name.matrix)
+##extract name from email adrress
+name3 <- gsub("@.*","",name.matrix)
+head(name3)
+##caculate the number of all the unique names
+length(unique(name3))
+length(unique(name3[,1]))
+length(unique(name3[,2]))
+name4 <- c(name3[,1],name3[,2])
+head(name4)
+n <- length(unique(name4))
+n
+##build the adjacency matrix
+mat <- matrix(0,n,n)
+rownames(mat) <- unique(name4)
+colnames(mat) <- unique(name4)
+mat[name3] <- 1
+##remove rowsum<20 and colsum<20
+rowcount <- rowSums(mat)
+head(rowcount)
+colcount <- colSums(mat)
+head(colcount)
+wwr <- which(rowcount>=20)
+wwl <- which(colcount>=20)
+n1 <- intersect(wwr, wwl) #fine the columnes and rows which are both bigger or equal to 2 
+length(n1)
+mat1 <- mat[n1,n1]
+dim(mat1)
+##remove rowsum==0 and colsum==0
+rowcount1 <- rowSums(mat1)
+rowcount1
+colcount1 <- colSums(mat1)
+head(colcount1)
+colcount1
+wwr1 <- which(rowcount1==0)
+wwl1 <- which(colcount1==0)
+n2 <- intersect(wwr1, wwl1) #fine the columnes and rows which are both bigger or equal to 2 
+length(n2)
+mat2 <- mat1[-n2,-n2]
+dim(mat2)
+rowSums(mat2)
+colSums(mat2)
+
+##build the graph
+library(igraph)
+g <- graph.adjacency(mat2,mode="directed")
+plot(g)
+
+##outdegree of each person
+outdgree <- rowSums(mat2)
+
+##indgree of each person
+indgree <- colSums(mat2)
+
+##degree
+indegreeG <- degree(g, mode="in")
+outdegreeG <- degree(g, mode="out")
+
+##number of edges
+rows <- sum(rowSums(mat2))
+rows #edges
+cols <- sum(colSums(mat2))
+cols
+
+##centrality
+centrality <- rowSums(mat2)/(dim(mat2)[1]-1)
+which(centrality==max(rowSums(mat2)/(dim(mat2)[1]-1)))
+centrality
+
+centrality1 <- centralize(mat2,normalized = T)
+head(centrality1)
+centr_eigen(g)
+centr_eigen(g)$centralization
+##betweeness
+betweenness <- betweenness(g)
+betweenness
+
+##prestige
+prestige <- colSums(mat2)/(dim(mat2)[1]-1)
+prestige
+
+
+
